@@ -5,10 +5,9 @@ A weather application for Android built with Kotlin and Jetpack Compose.
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/light.png"  alt="WeatherApp LightMode" />
-  <img src="screenshots/night.png"  alt="WeatherApp NightMode" />
+  <img src="screenshots/light.png" alt="LightMode" width="45%" />
+  <img src="screenshots/night.png" alt="NightMode" width="45%" />
 </p>
-
 ## Features
 
 - Search for weather by city name.
