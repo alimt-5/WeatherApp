@@ -2,6 +2,13 @@
 
 A weather application for Android built with Kotlin and Jetpack Compose.
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/light.png"  alt="WeatherApp LightMode" />
+  <img src="screenshots/night.png"  alt="WeatherApp NightMode" />
+</p>
+
 ## Features
 
 - Search for weather by city name.
@@ -63,7 +70,8 @@ Contains domain models, repository contracts, use cases, and the location-disabl
 
 ### Data
 
-Contains the WeatherAPI service, DTOs, mapper, remote data source, repositories, DataStore implementation, and Android location implementation.
+Contains the WeatherAPI service, DTOs, mapper, remote data source, repositories, DataStore
+implementation, and Android location implementation.
 
 ### Presentation
 

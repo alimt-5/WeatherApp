@@ -4,12 +4,15 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
 import android.location.LocationManager
 import androidx.core.content.ContextCompat
 import com.example.weatherapp.domain.location.LocationDisabledException
 import com.example.weatherapp.domain.model.Coordinates
 import com.example.weatherapp.domain.repository.LocationRepository
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
@@ -20,7 +23,6 @@ class AndroidLocationRepository @Inject constructor(
     private val locationClient: FusedLocationProviderClient
 ) : LocationRepository {
 
-    @SuppressLint("MissingPermission")
     override suspend fun getCurrentLocation(): Result<Coordinates> {
         if (!hasLocationPermission()) {
             return Result.failure(
@@ -32,22 +34,42 @@ class AndroidLocationRepository @Inject constructor(
             return Result.failure(LocationDisabledException())
         }
 
-        return suspendCancellableCoroutine { continuation ->
+        val cached = getLastKnownLocation()
+        if (cached != null) {
+            return Result.success(cached.toCoordinates())
+        }
+
+        return getFreshLocation()
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun getLastKnownLocation(): Location? =
+        suspendCancellableCoroutine { continuation ->
             locationClient.lastLocation
+                .addOnSuccessListener { location -> continuation.resume(location) }
+                .addOnFailureListener { continuation.resume(null) }
+        }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun getFreshLocation(): Result<Coordinates> {
+        val cancellationTokenSource = CancellationTokenSource()
+
+        return suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { cancellationTokenSource.cancel() }
+
+            locationClient.getCurrentLocation(
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                cancellationTokenSource.token
+            )
                 .addOnSuccessListener { location ->
                     if (location != null) {
-                        continuation.resume(
-                            Result.success(
-                                Coordinates(
-                                    latitude = location.latitude,
-                                    longitude = location.longitude
-                                )
-                            )
-                        )
+                        continuation.resume(Result.success(location.toCoordinates()))
                     } else {
                         continuation.resume(
                             Result.failure(
-                                IllegalStateException("Current location is unavailable.")
+                                IllegalStateException(
+                                    "Current location is unavailable. Make sure location is turned on and try again."
+                                )
                             )
                         )
                     }
@@ -57,6 +79,9 @@ class AndroidLocationRepository @Inject constructor(
                 }
         }
     }
+
+    private fun Location.toCoordinates() =
+        Coordinates(latitude = latitude, longitude = longitude)
 
     private fun hasLocationPermission(): Boolean {
         val fineGranted = ContextCompat.checkSelfPermission(

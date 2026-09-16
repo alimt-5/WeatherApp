@@ -3,6 +3,7 @@ package com.example.weatherapp.presentation.weather
 
 import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +46,17 @@ fun WeatherApp(
         }
     }
 
+    val openAppSettings = remember {
+        {
+            context.startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", context.packageName, null)
+                )
+            )
+        }
+    }
+
     WeatherAppTheme {
         WeatherScreen(
             state = state,
@@ -64,7 +76,8 @@ fun WeatherApp(
                     }
                 }
             },
-            onOpenLocationSettings = openLocationSettings
+            onOpenLocationSettings = openLocationSettings,
+            onOpenAppSettings = openAppSettings,
         )
     }
 }

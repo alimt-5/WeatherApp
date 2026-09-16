@@ -9,6 +9,7 @@ import com.example.weatherapp.domain.usecase.GetCurrentWeatherUseCase
 import com.example.weatherapp.domain.usecase.ObserveSavedQueryUseCase
 import com.example.weatherapp.domain.usecase.SaveQueryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,14 +25,11 @@ class WeatherViewModel @Inject constructor(
     private val saveQuery: SaveQueryUseCase
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<WeatherUiState>(
-        WeatherUiState.Loading
-    )
-
+    private val _state = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading)
     val state: StateFlow<WeatherUiState> = _state.asStateFlow()
-
     private var query = ""
     private var lastWeatherQuery = ""
+    private var loadJob: Job? = null
 
     init {
         loadSavedQuery()
@@ -67,20 +65,24 @@ class WeatherViewModel @Inject constructor(
         } else {
             _state.value = WeatherUiState.Error(
                 message = "Location permission was not granted.",
-                query = query
+                query = query,
+                isPermissionDenied = true,
+                canDismiss = lastWeatherQuery.isNotBlank(),
             )
         }
     }
 
+    private fun launchLoad(block: suspend () -> Unit) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch { block() }
+    }
+
     private fun loadSavedQuery() {
-        viewModelScope.launch {
+        launchLoad {
             query = observeSavedQuery().first()
 
             if (query.isBlank()) {
-                _state.value = WeatherUiState.Error(
-                    message = "Search for a city to get the weather.",
-                    query = ""
-                )
+                _state.value = WeatherUiState.Empty()
             } else {
                 loadWeather(query)
             }
@@ -89,35 +91,25 @@ class WeatherViewModel @Inject constructor(
 
     private fun search() {
         val normalizedQuery = query.trim()
-
-        if (normalizedQuery.isBlank()) {
-            _state.value = WeatherUiState.Error(
-                message = "Enter a city name.",
-                query = query
-            )
-            return
-        }
-
-        viewModelScope.launch {
+        if (normalizedQuery.isBlank()) return
+        launchLoad {
             saveQuery(normalizedQuery)
             loadWeather(normalizedQuery)
         }
     }
-
     private fun refresh() {
         val currentQuery = lastWeatherQuery.ifBlank {
             query.trim()
         }
-
         if (currentQuery.isNotBlank()) {
-            viewModelScope.launch {
+            launchLoad {
                 loadWeather(currentQuery)
             }
         }
     }
 
     private fun loadFromLocation() {
-        viewModelScope.launch {
+        launchLoad {
             _state.value = WeatherUiState.Loading
 
             getCurrentLocation()
@@ -151,7 +143,8 @@ class WeatherViewModel @Inject constructor(
                 _state.value = WeatherUiState.Error(
                     message = error.message
                         ?: "Unable to load weather for your location.",
-                    query = query
+                    query = query,
+                    canDismiss = lastWeatherQuery.isNotBlank(),
                 )
             }
     }
@@ -174,7 +167,8 @@ class WeatherViewModel @Inject constructor(
                 _state.value = WeatherUiState.Error(
                     message = error.message
                         ?: "Unable to load weather.",
-                    query = query
+                    query = query,
+                    canDismiss = lastWeatherQuery.isNotBlank(),
                 )
             }
     }
@@ -185,7 +179,17 @@ class WeatherViewModel @Inject constructor(
                 _state.value = WeatherUiState.Error(
                     message = "Location services are disabled. Enable them from Settings.",
                     query = query,
-                    isLocationDisabled = true
+                    isLocationDisabled = true,
+                    canDismiss = lastWeatherQuery.isNotBlank(),
+                )
+            }
+
+            is SecurityException -> {
+                _state.value = WeatherUiState.Error(
+                    message = "Location permission was not granted.",
+                    query = query,
+                    isPermissionDenied = true,
+                    canDismiss = lastWeatherQuery.isNotBlank(),
                 )
             }
 
@@ -193,7 +197,8 @@ class WeatherViewModel @Inject constructor(
                 _state.value = WeatherUiState.Error(
                     message = error.message
                         ?: "Unable to get your current location.",
-                    query = query
+                    query = query,
+                    canDismiss = lastWeatherQuery.isNotBlank(),
                 )
             }
         }
@@ -201,7 +206,7 @@ class WeatherViewModel @Inject constructor(
 
     private fun dismissError() {
         if (lastWeatherQuery.isNotBlank()) {
-            viewModelScope.launch {
+            launchLoad {
                 loadWeather(lastWeatherQuery)
             }
         }
