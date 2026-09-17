@@ -8,8 +8,9 @@ import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import javax.inject.Inject
 
-class WeatherRepositoryImpl @Inject constructor(private val remoteDataSource: WeatherRemoteDataSource) :
-    WeatherRepository {
+class WeatherRepositoryImpl @Inject constructor(
+    private val remoteDataSource: WeatherRemoteDataSource
+) : WeatherRepository {
     override suspend fun getCurrentWeather(query: String): Result<Weather> {
         if (query.isBlank()) return Result.failure(IllegalArgumentException("Enter a city name."))
         return try {

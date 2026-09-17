@@ -88,7 +88,6 @@ fun WeatherAppTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-
     val heroDay = HeroColors(
         dayGradient = listOf(HeroDayTop, HeroDayBottom),
         nightGradient = listOf(HeroDayTop, HeroDayBottom),
@@ -103,9 +102,7 @@ fun WeatherAppTheme(
         onHero = HeroNightOnContent,
         onHeroMuted = HeroNightOnContentMuted,
     )
-
     val heroColors = if (darkTheme) heroNight else heroDay
-
     CompositionLocalProvider(LocalHeroColors provides heroColors) {
         MaterialTheme(
             colorScheme = colorScheme,

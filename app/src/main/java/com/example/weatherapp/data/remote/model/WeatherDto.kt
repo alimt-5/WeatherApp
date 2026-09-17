@@ -1,7 +1,5 @@
 package com.example.weatherapp.data.remote.model
 
-data class WeatherDto(val location: LocationDto, val current: CurrentDto)
-
 data class LocationDto(
     val name: String,
     val region: String,
@@ -20,6 +18,11 @@ data class CurrentDto(
     val humidity: Int,
     val feelslike_c: Double,
     val is_day: Int
+)
+
+data class WeatherDto(
+    val location: LocationDto,
+    val current: CurrentDto
 )
 
 data class ConditionDto(

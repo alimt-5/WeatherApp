@@ -46,12 +46,17 @@ class AndroidLocationRepository @Inject constructor(
     private suspend fun getLastKnownLocation(): Location? =
         suspendCancellableCoroutine { continuation ->
             locationClient.lastLocation
-                .addOnSuccessListener { location -> continuation.resume(location) }
-                .addOnFailureListener { continuation.resume(null) }
+                .addOnSuccessListener { location ->
+                    continuation.resume(location)
+                }
+                .addOnFailureListener {
+                    continuation.resume(null)
+                }
         }
 
     @SuppressLint("MissingPermission")
     private suspend fun getFreshLocation(): Result<Coordinates> {
+
         val cancellationTokenSource = CancellationTokenSource()
 
         return suspendCancellableCoroutine { continuation ->
@@ -60,20 +65,19 @@ class AndroidLocationRepository @Inject constructor(
             locationClient.getCurrentLocation(
                 Priority.PRIORITY_BALANCED_POWER_ACCURACY,
                 cancellationTokenSource.token
-            )
-                .addOnSuccessListener { location ->
-                    if (location != null) {
-                        continuation.resume(Result.success(location.toCoordinates()))
-                    } else {
-                        continuation.resume(
-                            Result.failure(
-                                IllegalStateException(
-                                    "Current location is unavailable. Make sure location is turned on and try again."
-                                )
+            ).addOnSuccessListener { location ->
+                if (location != null) {
+                    continuation.resume(Result.success(location.toCoordinates()))
+                } else {
+                    continuation.resume(
+                        Result.failure(
+                            IllegalStateException(
+                                "Current location is unavailable. Make sure location is turned on and try again."
                             )
                         )
-                    }
+                    )
                 }
+            }
                 .addOnFailureListener { exception ->
                     continuation.resume(Result.failure(exception))
                 }

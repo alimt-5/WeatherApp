@@ -26,4 +26,5 @@ fun WeatherDto.toDomain(): Weather = Weather(
     )
 )
 
-private fun String.toIconUrl(): String = if (startsWith("//")) "https:$this" else this
+private fun String.toIconUrl(): String =
+    if (startsWith("//")) "https:$this" else this

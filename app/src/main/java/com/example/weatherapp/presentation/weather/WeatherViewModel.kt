@@ -19,10 +19,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WeatherViewModel @Inject constructor(
-    private val getCurrentWeather: GetCurrentWeatherUseCase,
-    private val getCurrentLocation: GetCurrentLocationUseCase,
-    private val observeSavedQuery: ObserveSavedQueryUseCase,
-    private val saveQuery: SaveQueryUseCase
+    private val getCurrentWeatherUseCase: GetCurrentWeatherUseCase,
+    private val getCurrentLocationUseCase: GetCurrentLocationUseCase,
+    private val observeSavedQueryUseCase: ObserveSavedQueryUseCase,
+    private val saveQueryUseCase: SaveQueryUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading)
@@ -31,31 +31,15 @@ class WeatherViewModel @Inject constructor(
     private var lastWeatherQuery = ""
     private var loadJob: Job? = null
 
-    init {
-        loadSavedQuery()
-    }
+    init { loadSavedQuery() }
 
     fun onEvent(event: WeatherEvent) {
         when (event) {
-            is WeatherEvent.QueryChanged -> {
-                query = event.query
-            }
-
-            WeatherEvent.Search -> {
-                search()
-            }
-
-            WeatherEvent.Refresh -> {
-                refresh()
-            }
-
-            WeatherEvent.UseCurrentLocation -> {
-                loadFromLocation()
-            }
-
-            WeatherEvent.DismissError -> {
-                dismissError()
-            }
+            is WeatherEvent.QueryChanged -> query = event.query
+            WeatherEvent.Search -> search()
+            WeatherEvent.Refresh -> refresh()
+            WeatherEvent.UseCurrentLocation -> loadFromLocation()
+            WeatherEvent.DismissError -> dismissError()
         }
     }
 
@@ -67,7 +51,7 @@ class WeatherViewModel @Inject constructor(
                 message = "Location permission was not granted.",
                 query = query,
                 isPermissionDenied = true,
-                canDismiss = lastWeatherQuery.isNotBlank(),
+                canDismiss = lastWeatherQuery.isNotBlank()
             )
         }
     }
@@ -79,7 +63,7 @@ class WeatherViewModel @Inject constructor(
 
     private fun loadSavedQuery() {
         launchLoad {
-            query = observeSavedQuery().first()
+            query = observeSavedQueryUseCase().first()
 
             if (query.isBlank()) {
                 _state.value = WeatherUiState.Empty()
@@ -93,10 +77,11 @@ class WeatherViewModel @Inject constructor(
         val normalizedQuery = query.trim()
         if (normalizedQuery.isBlank()) return
         launchLoad {
-            saveQuery(normalizedQuery)
+            saveQueryUseCase(normalizedQuery)
             loadWeather(normalizedQuery)
         }
     }
+
     private fun refresh() {
         val currentQuery = lastWeatherQuery.ifBlank {
             query.trim()
@@ -112,7 +97,7 @@ class WeatherViewModel @Inject constructor(
         launchLoad {
             _state.value = WeatherUiState.Loading
 
-            getCurrentLocation()
+            getCurrentLocationUseCase()
                 .onSuccess { coordinates ->
                     loadWeatherByCoordinates(coordinates)
                 }
@@ -122,18 +107,14 @@ class WeatherViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadWeatherByCoordinates(
-        coordinates: Coordinates
-    ) {
-        val coordinateQuery =
-            "${coordinates.latitude},${coordinates.longitude}"
+    private suspend fun loadWeatherByCoordinates(coordinates: Coordinates) {
+        val coordinateQuery = "${coordinates.latitude},${coordinates.longitude}"
 
-        getCurrentWeather(coordinateQuery)
+        getCurrentWeatherUseCase(coordinateQuery)
             .onSuccess { weather ->
                 lastWeatherQuery = coordinateQuery
                 query = weather.location.name
-                saveQuery(weather.location.name)
-
+                saveQueryUseCase(weather.location.name)
                 _state.value = WeatherUiState.Success(
                     weather = weather,
                     query = weather.location.name
@@ -141,8 +122,7 @@ class WeatherViewModel @Inject constructor(
             }
             .onFailure { error ->
                 _state.value = WeatherUiState.Error(
-                    message = error.message
-                        ?: "Unable to load weather for your location.",
+                    message = error.message ?: "Unable to load weather for your location.",
                     query = query,
                     canDismiss = lastWeatherQuery.isNotBlank(),
                 )
@@ -151,10 +131,8 @@ class WeatherViewModel @Inject constructor(
 
     private suspend fun loadWeather(searchQuery: String) {
         query = searchQuery.trim()
-
         _state.value = WeatherUiState.Loading
-
-        getCurrentWeather(query)
+        getCurrentWeatherUseCase(query)
             .onSuccess { weather ->
                 lastWeatherQuery = query
 
@@ -165,8 +143,7 @@ class WeatherViewModel @Inject constructor(
             }
             .onFailure { error ->
                 _state.value = WeatherUiState.Error(
-                    message = error.message
-                        ?: "Unable to load weather.",
+                    message = error.message ?: "Unable to load weather.",
                     query = query,
                     canDismiss = lastWeatherQuery.isNotBlank(),
                 )

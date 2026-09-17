@@ -11,8 +11,11 @@ import javax.inject.Inject
 class PreferencesDataSourceImpl @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) : PreferencesDataSource {
+
     private val queryKey = stringPreferencesKey("saved_query")
+
     override val savedQuery: Flow<String> = dataStore.data.map { it[queryKey].orEmpty() }
+
     override suspend fun saveQuery(query: String) {
         dataStore.edit { it[queryKey] = query }
     }

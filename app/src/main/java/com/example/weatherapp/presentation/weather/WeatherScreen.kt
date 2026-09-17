@@ -19,9 +19,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AddLocationAlt
 import androidx.compose.material.icons.rounded.Air
 import androidx.compose.material.icons.rounded.DeviceThermostat
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.LocationSearching
 import androidx.compose.material.icons.rounded.Opacity
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
@@ -66,27 +68,25 @@ fun WeatherScreen(
     val hero = MaterialTheme.heroColors
     val weather = (state as? WeatherUiState.Success)?.weather
     val background = weatherBackground(weather?.current)
-
     var query by remember { mutableStateOf("") }
     var showBlankQueryHint by remember { mutableStateOf(false) }
 
     LaunchedEffect(state) {
         when (state) {
             is WeatherUiState.Success -> query = state.weather.location.name
-            is WeatherUiState.Error -> if (state.query.isNotBlank()) query = state.query
+            is WeatherUiState.Error ->
+                if (state.query.isNotBlank()) query = state.query
             else -> Unit
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(background)
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(background)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 18.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -102,13 +102,13 @@ fun WeatherScreen(
                                 imageVector = Icons.Rounded.LocationOn,
                                 contentDescription = null,
                                 tint = hero.onHeroMuted,
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "${weather.location.name}, ${weather.location.country}",
                                 color = hero.onHeroMuted,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodyMedium
                             )
                         }
                     }
@@ -117,11 +117,10 @@ fun WeatherScreen(
                     Icon(
                         imageVector = Icons.Rounded.Refresh,
                         contentDescription = "Refresh",
-                        tint = hero.onHero,
+                        tint = hero.onHero
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
 
             SearchField(
@@ -140,7 +139,7 @@ fun WeatherScreen(
                     }
                 },
                 onLocation = { onEvent(WeatherEvent.UseCurrentLocation) },
-                isError = showBlankQueryHint,
+                isError = showBlankQueryHint
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -148,11 +147,8 @@ fun WeatherScreen(
             Box(modifier = Modifier.weight(1f)) {
                 when (state) {
                     WeatherUiState.Loading -> LoadingContent()
-
                     is WeatherUiState.Empty -> EmptyContent(message = state.message)
-
                     is WeatherUiState.Success -> WeatherDetails(weather = state.weather)
-
                     is WeatherUiState.Error -> ErrorContent(
                         state = state,
                         onEvent = onEvent,
@@ -179,7 +175,7 @@ private fun WeatherDetails(weather: Weather) {
             text = "Details",
             color = hero.onHero,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -188,7 +184,7 @@ private fun WeatherDetails(weather: Weather) {
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f)
         ) {
             items(weatherMetricItems(weather.current)) { metric ->
                 MetricCard(metric)
@@ -200,18 +196,13 @@ private fun WeatherDetails(weather: Weather) {
         Text(
             text = "Local time · ${weather.location.localTime}",
             color = hero.onHeroMuted.copy(alpha = 0.75f),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelMedium
         )
     }
 }
 
 
-
-private data class MetricItem(
-    val label: String,
-    val value: String,
-    val icon: ImageVector,
-)
+private data class MetricItem(val label: String, val value: String, val icon: ImageVector)
 
 private fun weatherMetricItems(current: CurrentWeather) = listOf(
     MetricItem(
@@ -224,7 +215,13 @@ private fun weatherMetricItems(current: CurrentWeather) = listOf(
     MetricItem("Pressure", "${format(current.pressureMb)} mb", Icons.Rounded.Speed),
 )
 
-private fun format(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(value)
+private fun format(value: Double): String {
+    return if (value % 1.0 == 0.0)
+        value.toInt().toString()
+    else
+        "%.1f".format(value)
+}
+
 
 @Composable
 private fun SearchField(
@@ -232,12 +229,12 @@ private fun SearchField(
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onLocation: () -> Unit,
-    isError: Boolean = false,
+    isError: Boolean = false
 ) {
     val hero = MaterialTheme.heroColors
 
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    Column(verticalArrangement = Arrangement.Center) {
+        Row {
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
@@ -245,9 +242,7 @@ private fun SearchField(
                 singleLine = true,
                 isError = isError,
                 label = { Text("Search city") },
-                leadingIcon = {
-                    Icon(Icons.Rounded.Search, contentDescription = null)
-                },
+                leadingIcon = { Icon(Icons.Rounded.LocationSearching, contentDescription = null)},
                 trailingIcon = {
                     IconButton(onClick = onSearch) {
                         Icon(Icons.Rounded.Search, contentDescription = "Search")
@@ -283,10 +278,11 @@ private fun SearchField(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(hero.onHero.copy(alpha = 0.14f)),
+                    .background(hero.onHero.copy(alpha = 0.14f))
+                    .padding(top = 6.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.LocationOn,
+                    imageVector = Icons.Rounded.AddLocationAlt,
                     contentDescription = "Use current location",
                     tint = hero.onHero,
                 )
@@ -400,13 +396,13 @@ private fun EmptyContent(message: String) {
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = message,
             color = hero.onHeroMuted,
             style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -416,21 +412,21 @@ private fun ErrorContent(
     state: WeatherUiState.Error,
     onEvent: (WeatherEvent) -> Unit,
     onOpenLocationSettings: () -> Unit,
-    onOpenAppSettings: () -> Unit,
+    onOpenAppSettings: () -> Unit
 ) {
     val hero = MaterialTheme.heroColors
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = state.message,
                 color = hero.onHero,
                 style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(12.dp))
             when {
@@ -459,7 +455,6 @@ private fun ErrorContent(
 @Composable
 private fun weatherBackground(current: CurrentWeather?): Brush {
     val hero = MaterialTheme.heroColors
-
     return when {
         current == null -> Brush.verticalGradient(hero.dayGradient)
         current.condition.contains("rain", true) -> Brush.verticalGradient(hero.rainGradient)
